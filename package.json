@@ -1,0 +1,22 @@
+{
+	"name": "cmdutil",
+	"version": "0.1.0",
+	"description": "common command-line program library functions",
+	"main": "./lib/cmdutil.js",
+	"author": "Joyent (joyent.com)",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/joyent/node-cmdutil.git"
+	},
+	"dependencies": {
+		"assert-plus": "0.1.5",
+		"extsprintf": "1.3.0"
+	},
+	"devDependencies": {
+		"verror": "1.6.0"
+	},
+	"scripts": {
+		"test": "make test"
+	},
+	"license": "MIT"
+}

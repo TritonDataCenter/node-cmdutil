@@ -1,0 +1,29 @@
+testing: fail-error.js (expect: 1)
+myprog: something went wrong
+-----------------------------------
+
+testing: fail-printflike.js (expect: 1)
+myprog: something very bad went wrong
+-----------------------------------
+
+testing: fail-status.js (expect: 7)
+myprog: something very bad went wrong
+-----------------------------------
+
+testing: fail-verror.js (expect: 1)
+myprog: something went wrong: ENOENT, no such file or directory '/nonexistent_file'
+-----------------------------------
+
+testing: usage-warn.js (expect: 2)
+myprog: no URL specified
+usage: myprog fetch  [-v] URL
+       myprog upload [-v] URL FILENAME
+Fetch or update the contents of a remote URL.
+-----------------------------------
+
+testing: usage.js (expect: 2)
+usage: myprog fetch  [-v] URL
+       myprog upload [-v] URL FILENAME
+Fetch or update the contents of a remote URL.
+-----------------------------------
+
