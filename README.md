@@ -6,6 +6,9 @@ written in Node.
 * [warn(...)](#warn): print a warning message to stderr
 * [fail(...)](#fail): print a warning message to stderr and exit
 * [usage(...)](#usage): print a usage message to stderr and exit
+* [exitOnEpipe](#exitOnEpipe): exit normally (with status 0) when EPIPE is seen
+  on stdout.  This causes Node programs to behave like other programs do by
+  default on most Unix-like systems.  See details below.
 
 You should also check out:
 
@@ -285,6 +288,84 @@ If you call this function multiple times, only the last values for any of the
 above properties will be used.
 
 
+## exitOnEpipe()
+
+This function causes an EPIPE error on `process.stdout` to to exit the program
+immediately with status 0, using `process.exit(0)`.  This makes a Node program
+behave like most other programs on Unix-like systems.  Any other errors on
+`stdout` will be thrown with `throw`, so these errors will be uncatchable.  Do
+not use this function if you intend to handle other errors on stdout.
+
+This function takes no arguments and produces no errors.
+
+**Background**: By default, on Unix-like systems, programs automatically exit
+with status 0 when they receive SIGPIPE.  This behavior supports the common
+pattern of piping one command into another but having the first program
+terminate if the second program terminates.  For example, if you generate many
+lines of output and pipe it to `head(1)`:
+
+    # yes | head
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    #
+
+then this works as you'd expect: the `yes` program exits when this happens,
+even though `yes` normally runs until you explicitly stop it.  We can see
+what's going on using `strace` or `truss`:
+
+    # truss -t write yes | head
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    y
+    write(1, " y\n y\n y\n y\n y\n y\n".., 5120)    = 5120
+    write(1, " y\n y\n y\n y\n y\n y\n".., 5120)    Err#32 EPIPE
+        Received signal #13, SIGPIPE [default]
+
+We see that the `yes` process got EPIPE from the second `write(2)` system call,
+and that resulted in a `SIGPIPE` being delivered.  The default disposition of
+`SIGPIPE` is to cause the process to exit with status 0.  This is one of those
+behind-the-scenes mechanisms that makes the Unix shell work the way you'd
+expect.
+
+By default, this doesn't happen with Node programs.  Instead, Node crashes on
+the `EPIPE` from `write(2)`:
+
+    # node -e 'function tick() { console.log("y"); } setInterval(tick, 1000);' | sleep 3
+    
+    events.js:72
+            throw er; // Unhandled 'error' event
+                  ^
+    Error: write EPIPE
+        at errnoException (net.js:907:11)
+        at Object.afterWrite (net.js:723:19)
+    # 
+
+When this happens, the status code is non-zero, though you have to `set -o
+pipefail` in your shell to see that in this example.  This happens because Node
+explicitly ignores `SIGPIPE` and then emits errors like `EPIPE` on the
+appropriate stream object.  For stdout (and possibly stderr), this is almost
+certainly not what you want.
+
+Calling `exitOnEpipe()` adds an `'error'` listener to `process.stdout` that
+checks whether the error is for `EPIPE`.  If so, it calls `process.exit(0)`.
+If not, it throws the error.  It would be better to propagate it in a way that
+could be handled, but there's not a great way to do this from this context, and
+it's uncommon that people intend to handle other errors on stdout anyway.
 
 
 # Contributions
