@@ -9,6 +9,8 @@ written in Node.
 * [exitOnEpipe](#exitOnEpipe): exit normally (with status 0) when EPIPE is seen
   on stdout.  This causes Node programs to behave like other programs do by
   default on most Unix-like systems.  See details below.
+* [confirm](#confirm): print a message to stdout, read one byte of input from
+  stdin, and test whether it appears affirmative
 
 You should also check out:
 
@@ -27,10 +29,12 @@ You should also check out:
 # Functions
 
 The interfaces here follow [Joyent's Best Practices for Error Handling in
-Node.js](https://www.joyent.com/developers/node/design/errors).  All of these
-interfaces are synchronous and there are no operational errors.  The only
-possible errors are invalid arguments, which are programmer errors.  These are
-thrown and should not be handled.
+Node.js](https://www.joyent.com/developers/node/design/errors).
+
+All of the functions here except for `confirm()` are synchronous.  None of the
+functions in this module emit operational errors.  The only possible errors are
+invalid arguments, which are programmer errors.  These are thrown and should not
+be handled.
 
 
 ## warn(...)
@@ -366,6 +370,28 @@ checks whether the error is for `EPIPE`.  If so, it calls `process.exit(0)`.
 If not, it throws the error.  It would be better to propagate it in a way that
 could be handled, but there's not a great way to do this from this context, and
 it's uncommon that people intend to handle other errors on stdout anyway.
+
+
+## confirm(args, callback)
+
+`confirm(args, callback)` emits a message to stdout, waits for the user to input
+a single byte (in raw mode, if it's a TTY), and invokes `callback` with a
+boolean value indicating whether the confirmation was either "y" or "Y" (for
+"yes").  Any other response (including end-of-stream or a blank line) is
+considered false.
+
+The only supported argument inside `args` is:
+
+* `message`: the message to print to stdout (verbatim)
+
+`callback` is invoked as `callback(result)`.  `result` is a boolean indicating
+whether the user input was affirmative.  There are no operational errors for
+this function.  Callers are expected to handle errors on stdin if desired.
+
+This function uses stdin and stdout directly, so callers should take care to
+avoid using it in contexts where that's not appropriate (e.g., in a program that
+reads data on stdin or produces formatted data on stdout).  The behavior is
+undefined if stdin has already emitted 'end' when this function is called.
 
 
 # Contributions
